@@ -9,17 +9,18 @@ class Params:
     input_dim: int = 784
     hidden_dim: int = 200
     latent_dim: int = 20
-    epochs: int = 20
+    epochs: int = 1000
     learning_rate: float = 3e-4
     batch_size: int = 32
+    device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class Encoder(nn.Module):
     def __init__(self, p: Params):
         super().__init__()
-        self.linear = nn.Linear(p.input_dim, p.hidden_dim)
-        self.linear_mu = nn.Linear(p.hidden_dim, p.latent_dim)
-        self.linear_logvar = nn.Linear(p.hidden_dim, p.latent_dim)
+        self.linear = nn.Linear(p.input_dim, p.hidden_dim, device=p.device)
+        self.linear_mu = nn.Linear(p.hidden_dim, p.latent_dim, device=p.device)
+        self.linear_logvar = nn.Linear(p.hidden_dim, p.latent_dim, device=p.device)
 
     def forward(self, x):
         h = self.linear(x)
@@ -33,8 +34,8 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, p: Params):
         super().__init__()
-        self.linear1 = nn.Linear(p.latent_dim, p.hidden_dim)
-        self.linear2 = nn.Linear(p.hidden_dim, p.input_dim)
+        self.linear1 = nn.Linear(p.latent_dim, p.hidden_dim, device=p.device)
+        self.linear2 = nn.Linear(p.hidden_dim, p.input_dim, device=p.device)
 
     def forward(self, z):
         h = self.linear1(z)
@@ -62,6 +63,6 @@ class VAE(nn.Module):
     @staticmethod
     def reparameterize(mu, sigma):
         """変数変換トリック"""
-        std = torch.exp(0.5 * sigma)
-        eps = torch.randn_like(std)
-        return mu + eps * std
+        eps = torch.randn_like(sigma)
+        z = mu + eps * sigma
+        return z
